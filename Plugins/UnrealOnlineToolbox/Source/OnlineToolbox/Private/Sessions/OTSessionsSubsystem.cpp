@@ -86,29 +86,61 @@ void UOTSessionsSubsystem::CreateSession(int32 NumConnections, const FString& Ma
 		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
 
 		ToolboxOnCreateSessionComplete.Broadcast(false);
+		UE_LOG(LogTemp, Error, TEXT("FAILED CREATE SESSION"));	// tianle
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CREATE SESSION SUCCESS"));	// tianle
 	}
 }
 
 void UOTSessionsSubsystem::FindSessions(int32 MaxSearchResults, const FString& MatchType)
 {
+	UE_LOG(LogTemp, Warning, TEXT("SUBSYSTEM CALLED TO FIND SESSIONS"));	// tianle
 	if(!ensureMsgf(SessionInterface.IsValid(), TEXT("Unable to get the Session Interface"))) return;
+	UE_LOG(LogTemp, Warning, TEXT("PASSED ENSUREMSGF"));	// tianle
 
+	SessionInterface->CancelFindSessions();
+
+	
 	//Register the delegate for when the find session complete and store its handle for later removal
 	FindSessionsCompleteDelegateHandle = SessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
 	
 	LastSessionSearch = MakeShareable(new FOnlineSessionSearch());
 	LastSessionSearch->MaxSearchResults = MaxSearchResults;
+
+	// Check Subsystem Name for debugging	//tianle
+	FName subsysname = IOnlineSubsystem::Get()->GetSubsystemName();
+	UE_LOG(LogTemp, Log, TEXT("Current Subsystem: %s"), *subsysname.ToString());
+	
 	LastSessionSearch->bIsLanQuery = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
+	
 	LastSessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 	LastSessionSearch->QuerySettings.Set(FName("MatchType"), MatchType, EOnlineComparisonOp::Equals);
+
+	if (!LastSessionSearch->bIsLanQuery)
+	{
+		LastSessionSearch->TimeoutInSeconds = 20.0f;
+	}
 	
+	
+	UE_LOG(LogTemp, Warning, TEXT("START FIND SESSION"));	// tianle
 	const ULocalPlayer* LocalPLayer = GetWorld()->GetFirstLocalPlayerFromController();
+	FUniqueNetIdRepl NetIdRepl = LocalPLayer->GetPreferredUniqueNetId();
+	if (!NetIdRepl.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Player UniqueNetId is INVALID. Are you logged in?"));
+		return;
+		// Some subsystems might fail here, but usually they handle invalid ID by just failing the call.
+	}
+	
 	const bool success = SessionInterface->FindSessions(*LocalPLayer->GetPreferredUniqueNetId(), LastSessionSearch.ToSharedRef());
 	if(!success)
 	{
 		SessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegateHandle);
 		TArray<FOTSessionSearchResult> Results;
 		ToolboxOnFindSessionComplete.Broadcast(Results, false);
+		UE_LOG(LogTemp, Error, TEXT("FAILED FIND SESSION"));	// tianle
 	}
 }
 

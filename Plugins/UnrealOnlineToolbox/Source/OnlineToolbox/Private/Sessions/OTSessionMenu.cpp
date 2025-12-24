@@ -40,13 +40,30 @@ void UOTSessionMenu::MenuSetup(const bool ShouldAddToViewport,const bool ShouldB
 		if(UGameInstance* Instance = World->GetGameInstance())
 		{
 			OTSessionsSubsystem = Instance->GetSubsystem<UOTSessionsSubsystem>();
+			if (OTSessionsSubsystem == nullptr)
+			{
+				UE_LOG(LogTemp, Error, TEXT("OTSessionsSubsystem INVALID"));	// tianle
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("UOTSessionMenu valid"));	// tianle
+			}
 			checkf(OTSessionsSubsystem != nullptr, TEXT("Multiplayer Session Subsystem cannot be found"));
 
 			OTSessionsSubsystem->ToolboxOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
 			OTSessionsSubsystem->ToolboxOnFindSessionComplete.AddDynamic(this, &ThisClass::OnFindSession);
 			OTSessionsSubsystem->ToolboxOnJoinSessionComplete.AddDynamic(this, &ThisClass::OnJoinSession);
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("GAMEINSTANCE INVALID"));	// tianle
+		}
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("WORLD INVALID"));	// tianle
+	}
+	
 
 	
 	
@@ -77,9 +94,10 @@ void UOTSessionMenu::HostSession(const TSoftObjectPtr<UWorld> LobbyLevel,
 
 void UOTSessionMenu::FindSession(int32 MaxSessionNumber, const FString& MatchType)
 {
+	UE_LOG(LogTemp, Warning, TEXT("UOTSessionMenu FIND SESSION CALLED"));	// tianle
 	if(!ensureMsgf(OTSessionsSubsystem != nullptr,
 		TEXT("Multiplayer Session Subsystem is not set. Did you call MenuSetup?"))) return;
-
+	UE_LOG(LogTemp, Warning, TEXT("CALLING SUBSYSTEM TO FIND SESSIONS"));	// tianle
 	OTSessionsSubsystem->FindSessions(MaxSessionNumber, MatchType);
 }
 
