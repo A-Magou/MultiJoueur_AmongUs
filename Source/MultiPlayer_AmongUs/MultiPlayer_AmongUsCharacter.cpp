@@ -2,6 +2,7 @@
 
 #include "MultiPlayer_AmongUsCharacter.h"
 
+#include "amongus4PGameMode.h"
 #include "amongusPlayerController.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
@@ -14,23 +15,24 @@
 #include "InputActionValue.h"
 #include "Net/UnrealNetwork.h"
 #include "MultiPlayer_AmongUs.h"
-//#include "amongusPlayerState.h"
 #include "ServerRewind/RewindSubsystem.h"
+#include "Enum/playerEnum.h"
+#include "amongus4PGameState.h"
 
 void AMultiPlayer_AmongUsCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Initialize Skin by reading playerstate's property
-	if (HasAuthority())
-	{
-		PS = GetPlayerState<AamongusPlayerState>();
-		if (PS)
-		{
-			CurrentSkinIndex = PS->SkinIndex;
-			UpdateSkinFromIndex(CurrentSkinIndex);
-		}
-	}
+	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
+	if (TimerManager.IsTimerActive(InitSkinTimerHandle)) return;	// idk, just for safety?
+	// set a timer of ChangeLevelCountDownDuration (let's say 30 sec). After 30sec, change level.
+	TimerManager.SetTimer(
+		InitSkinTimerHandle,
+		this,
+		&AMultiPlayer_AmongUsCharacter::InitSkin,
+		1.0,
+		false
+	);
 }
 
 AMultiPlayer_AmongUsCharacter::AMultiPlayer_AmongUsCharacter()
@@ -91,10 +93,16 @@ void AMultiPlayer_AmongUsCharacter::SetupPlayerInputComponent(UInputComponent* P
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMultiPlayer_AmongUsCharacter::Look);
 
 		// Change Skin
-		EnhancedInputComponent->BindAction(ChangeSkinAction, ETriggerEvent::Started, this, &AMultiPlayer_AmongUsCharacter::ServerChangeSkin_Implementation);
+		EnhancedInputComponent->BindAction(ChangeSkinAction, ETriggerEvent::Started, this, &AMultiPlayer_AmongUsCharacter::TryChangeSkin);
 
 		// Set Ready
-		EnhancedInputComponent->BindAction(SetReadyAction, ETriggerEvent::Started, this, &AMultiPlayer_AmongUsCharacter::ServerChangeSkin_Implementation);
+		EnhancedInputComponent->BindAction(SetReadyAction, ETriggerEvent::Started, this, &AMultiPlayer_AmongUsCharacter::SetReady);
+
+		// Interaction / Sabotage
+		EnhancedInputComponent->BindAction(Interaction_SabotageAction, ETriggerEvent::Started, this, &AMultiPlayer_AmongUsCharacter::GeneralInteraction);
+
+		// Kill
+		EnhancedInputComponent->BindAction(KillAction, ETriggerEvent::Started, this, &AMultiPlayer_AmongUsCharacter::SetReady);
 	}
 	else
 	{
@@ -162,82 +170,163 @@ void AMultiPlayer_AmongUsCharacter::DoJumpEnd()
 	StopJumping();
 }
 
-void AMultiPlayer_AmongUsCharacter::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
 
-	PS = GetPlayerState<AamongusPlayerState>();
-	if (PS)
-	{
-		UpdateSkinFromIndex(PS->SkinIndex);
-	}
-}
 
 //CHANGE SKIN
-void AMultiPlayer_AmongUsCharacter::UpdateSkinFromIndex(int NewSkinIndex)
-{
-	if (!Skins.Contains(NewSkinIndex)) NewSkinIndex = 0;
 
-	CurrentSkinIndex = NewSkinIndex;
-	
-	if (Skins.Contains(CurrentSkinIndex))
+void AMultiPlayer_AmongUsCharacter::TryChangeSkin()
+{
+	ServerChangeSkin();
+}
+
+void AMultiPlayer_AmongUsCharacter::UpdateSkinVisual(int32 SkinIndex)
+{
+	if (Skins.Contains(SkinIndex))
 	{
-		GetMesh()->SetMaterial(0, Skins[CurrentSkinIndex]);
+		GetMesh()->SetMaterial(0, Skins[SkinIndex]);
+		UE_LOG(LogTemp, Log, TEXT("Skin updated to index: %d"), SkinIndex);
 	}
 }
 
 void AMultiPlayer_AmongUsCharacter::ServerChangeSkin_Implementation()
 {
-	int32 NewIndex = CurrentSkinIndex + 1;
-	if (NewIndex >= Skins.Num()) NewIndex = 0;
-	
-	CurrentSkinIndex = NewIndex;
-	
-	//AamongusPlayerState* PS = GetPlayerState<AamongusPlayerState>();
-	if (PS) PS->SetSkin(CurrentSkinIndex);
-	else { /*ERROR LOG*/ }
-	
-	UpdateSkinFromIndex(CurrentSkinIndex);
-}
-
-
-
-void AMultiPlayer_AmongUsCharacter::DoChangeSkin(UMaterialInterface* skin)
-{
-	UE_LOG(LogTemp, Warning, TEXT("changing skin!"));
-	
-	if (HasAuthority())
+	AamongusPlayerState* AmongusPlayerState = GetPlayerState<AamongusPlayerState>();
+	if (AmongusPlayerState)
 	{
-		CurrentSkin = skin;
-		OnRep_SkinChanged();
-
-		if (CurrentSkinIndex >= Skins.Num() - 1)
-		{
-			CurrentSkinIndex = 0;
-		}
-		else
-		{
-			CurrentSkinIndex++;
-		}
-	}
-	else
-	{
-		ServerChangeSkin();
+		int32 NewIndex = AmongusPlayerState->SkinIndex + 1;
+		if (NewIndex >= Skins.Num()) NewIndex = 0;
+		
+		AmongusPlayerState->ServerSetSkinIndex(NewIndex);
 	}
 }
 
-void AMultiPlayer_AmongUsCharacter::OnRep_SkinChanged()
-{
-	GetMesh()->SetMaterial(0, CurrentSkin);
-}
+
 // CHANGE SKIN END
 
 void AMultiPlayer_AmongUsCharacter::SetReady()
 {
-	if (PS == nullptr) /*ERROR LOG*/ return;
+	AamongusPlayerState* AmongusPlayerState = GetPlayerState<AamongusPlayerState>();
+	if (AmongusPlayerState == nullptr) /*ERROR LOG*/ return;
 
-	PS->SetReady();
+	AmongusPlayerState->SetReady();
 }
+
+void AMultiPlayer_AmongUsCharacter::GeneralInteraction()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("GeneralInteraction called"));
+	AamongusPlayerController* amPC = Cast<AamongusPlayerController>(GetController());
+	AGameStateBase* GS = GetWorld()->GetGameState();
+	Aamongus4PGameState* amGS = Cast<Aamongus4PGameState>(GS);
+	if (amPC && amGS)
+	{
+		AamongusPlayerState* amPS = amPC->GetPlayerState<AamongusPlayerState>();
+		if (amPS)
+		{
+			if (amPS->Etat == EEtatJoueur::Crew)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("CREW INTERACTION TRIGGERED"));
+				if (Buttons.Num() > 0)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Interacting with at least one button"));
+					ServerTryInteractionWithInteractable();
+				}
+			}
+			else if (amPS->Etat == EEtatJoueur::Impostor)
+			{
+				if (amGS->IsSabotageAbilityReady())
+				{
+					// go PRC here
+					ServerTrySabotage();
+				}
+				else
+				{
+					// implement a blueprint native event to warn player that they can't sabotage right now
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("INVALID ETAT"));
+				// dead or invalid Etat
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("player state is null"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("player controller or/and game state is/are null"));
+	}
+}
+
+void AMultiPlayer_AmongUsCharacter::ServerTryInteractionWithInteractable_Implementation()
+{
+	if (Buttons[0] == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Button 0 is null"));
+		return;
+	}
+	ClientStartMiniGame();
+}
+
+void AMultiPlayer_AmongUsCharacter::ClientStartMiniGame_Implementation()
+{
+	AamongusPlayerController* amPC = Cast<AamongusPlayerController>(GetController());
+	if (amPC)
+	{
+		amPC->ShowMiniGameWidget();
+		amPC->SetShowMouseCursor(true);
+	}
+}
+
+void AMultiPlayer_AmongUsCharacter::ServerTrySabotage_Implementation()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("ServerTrySabotage called"));
+	if (!HasAuthority()) return;
+	
+	AGameStateBase* GS = GetWorld()->GetGameState();
+	Aamongus4PGameState* amGS = Cast<Aamongus4PGameState>(GS);
+	AamongusPlayerController* amPC = Cast<AamongusPlayerController>(this->GetController());
+	if (amPC && amGS)
+	{
+		AamongusPlayerState* amPS = amPC->GetPlayerState<AamongusPlayerState>();
+		if (amPS)
+		{
+			if (! (amPS->Etat == EEtatJoueur::Impostor))
+			{
+				UE_LOG(LogTemp, Error, TEXT("ERROR, a non imposter tries to sabotage"));
+				return;
+			}
+			if (! amGS->IsSabotageAbilityReady()) return;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("ServerTrySabotage amPS invalid"));
+			return;
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerTrySabotage amPC && amGS invalid"));
+		return;
+	}
+	
+	//UE_LOG(LogTemp, Warning, TEXT("now, valid for sabotage"));
+	// now, valid for sabotage
+	AGameModeBase* GM = GetWorld()->GetAuthGameMode();
+	if (GM)
+	{
+		Aamongus4PGameMode* amGM = Cast<Aamongus4PGameMode>(GM);
+		if (amGM)
+		{
+			amGM->StartSabotage();
+		}
+	}
+	
+	
+}
+
 
 void AMultiPlayer_AmongUsCharacter::DoLineTrace()
 {
@@ -329,6 +418,57 @@ void AMultiPlayer_AmongUsCharacter::ConfirmHit_Implementation()
 void AMultiPlayer_AmongUsCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
+void AMultiPlayer_AmongUsCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{	UE_LOG(LogTemp, Warning, TEXT("overlap begin"));
+	if (OtherActor && (OtherActor != this))
+	{
+		ABouton* Button = Cast<ABouton>(OtherActor);
+		if (Button)
+		{
+			Buttons.Add(Button);
+		}
+	}
+}
+
+void AMultiPlayer_AmongUsCharacter::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor && (OtherActor != this))
+	{
+		ABouton* Button = Cast<ABouton>(OtherActor);
+		if (Button)
+		{
+			Buttons.Remove(Button);
+		}
+	}
+}
+
+void AMultiPlayer_AmongUsCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	AamongusPlayerState* AmongusPlayerState = GetPlayerState<AamongusPlayerState>();
 	
-	DOREPLIFETIME(AMultiPlayer_AmongUsCharacter, CurrentSkin);
+	if (AmongusPlayerState == nullptr)
+	{
+		//UE_LOG(LogTemp, Error, TEXT("PS is null"));
+		return;
+	}
+	/*else UE_LOG(LogTemp, Warning, TEXT("PS is SET!"));*/
+	
+	UpdateSkinVisual(AmongusPlayerState->SkinIndex);
+}
+
+void AMultiPlayer_AmongUsCharacter::InitSkin()
+{
+	AamongusPlayerState* AmongusPlayerState = GetPlayerState<AamongusPlayerState>();
+	if (AmongusPlayerState == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("PS is null"));
+		return;
+	}
+	UpdateSkinVisual(AmongusPlayerState->SkinIndex);
 }

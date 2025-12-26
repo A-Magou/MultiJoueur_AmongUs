@@ -31,6 +31,8 @@ void AamongusPlayerController::OnNbTaskChanged(int newNbTask)
 
 void AamongusPlayerController::OnEtatChanged(AamongusPlayerState* changedPS, EEtatJoueur newEtat)
 {
+	if (AmongusHUD) AmongusHUD->UpdateEtat(newEtat);
+	/*
 	AamongusPlayerState* myPS = GetPlayerState<AamongusPlayerState>();
 	if (myPS == nullptr)
 	{
@@ -55,15 +57,17 @@ void AamongusPlayerController::OnEtatChanged(AamongusPlayerState* changedPS, EEt
 			AmongusHUD->UpdateEtat(changedPS, newEtat);
 		}
 	}
+	*/
+	
 }
 
 
-
+/// crew survive count down ///
 void AamongusPlayerController::StartCountDownTimerHUD_Client()
 {
 	if (AmongusHUD)
 	{
-		AmongusHUD->ShowTimerWidget();
+		AmongusHUD->CreateGlobalTimerWidget();
 	}
 	
 	GetWorldTimerManager().SetTimer(
@@ -97,9 +101,9 @@ void AamongusPlayerController::UpdateCountDownTimerHUD_Client()
 	else if (FPGS)
 	{
 		float ServerTime = GetServerWorldTime();
-		float ElapsedTime = ServerTime - FPGS->CountDownStartTime_Server;
+		float ElapsedTime = ServerTime - FPGS->GameCountDownStartTime_Server;
 		RemainingTime = FPGS->CountDownDuration - ElapsedTime;
-
+		
 		if (AmongusHUD)
 		{
 			AmongusHUD->UpdateTimerWidget(RemainingTime);
@@ -108,6 +112,66 @@ void AamongusPlayerController::UpdateCountDownTimerHUD_Client()
 	
 	//UE_LOG(LogTemp, Warning, TEXT("remaining time: %d"), RemainingTime);
 }
+/// crew survive count down end ///
+
+
+
+/// sabotage count down ///
+void AamongusPlayerController::UpdateSabotageCountDownTimerHUD_Client(float EndTime)
+{
+	UE_LOG(LogTemp, Warning, TEXT("AamongusPlayerController::UpdateSabotageCountDownTimerHUD_Client called"));
+	FTimerManager& TM = GetWorldTimerManager();
+	
+	this->SabotageCountDownEndTime = EndTime;
+	
+	if (EndTime == -1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("should remove widget"));
+		if (TM.IsTimerActive(SabotageCountDownTimerHandle))
+		{
+			TM.ClearTimer(SabotageCountDownTimerHandle);
+		}
+		
+		if (AmongusHUD)
+		{
+			AmongusHUD->UpdateSabotageCountDownWidget(EndTime);
+		}
+		return;
+	}
+	
+	if (!TM.IsTimerActive(SabotageCountDownTimerHandle))
+	{
+		TM.SetTimer(
+        	SabotageCountDownTimerHandle,
+        	this,
+        	&AamongusPlayerController::UpdateSabotageCountDownTimerContent,
+        	0.5f,
+        	true
+        );
+	}
+
+}
+
+void AamongusPlayerController::UpdateSabotageCountDownTimerContent()
+{
+	//  endtime - now
+	RemainingSabotageCountDownTime = SabotageCountDownEndTime - GetServerWorldTime();
+
+	if (AmongusHUD)
+	{
+		AmongusHUD->UpdateSabotageCountDownWidget(RemainingSabotageCountDownTime);
+	}
+}
+
+void AamongusPlayerController::ShowMiniGameWidget()
+{
+	if (AmongusHUD)
+	{
+		AmongusHUD->CreateMiniGameWidget();
+	}
+}
+
+/// sabotage count down end ///
 
 
 
@@ -119,6 +183,7 @@ float AamongusPlayerController::GetServerWorldTimeDelta() const
 
 float AamongusPlayerController::GetServerWorldTime() const
 {
+	// important, use this
 	return GetWorld()->GetTimeSeconds() + ServerWorldTimeDelta;
 }
 
@@ -172,16 +237,6 @@ void AamongusPlayerController::ClientUpdateWorldTime_Implementation(float Client
 	}
 
 	ServerWorldTimeDelta = ServerTimestamp - ClientTimestamp - (AdjustedRTT / 2);
-	
-	// shortest round trip time
-	/*
-	const float RoundTripTime = GetWorld()->GetTimeSeconds() - ClientTimestamp;
-	if (RoundTripTime < ShortestRoundTripTime)
-	{
-		ShortestRoundTripTime = RoundTripTime;
-		ServerWorldTimeDelta = ServerTimestamp - ClientTimestamp - (ShortestRoundTripTime / 2.0);
-	}
-	*/
 }
 
 void AamongusPlayerController::ServerRequestWorldTime_Implementation(float ClientTimestamp)

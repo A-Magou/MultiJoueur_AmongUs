@@ -6,44 +6,20 @@
 
 #include "amongusPlayerState.h"
 
+ALobbyGameMode::ALobbyGameMode()
+{
+	bUseSeamlessTravel = true;
+}
+
 void ALobbyGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-
-	ALobbyGameState* LGS = GetGameState<ALobbyGameState>();
-	if (LGS)
-	{
-		//LGS->initRemainingTime(ChangeLevelCountDownDuration);
-		//LGS->OnRemainingTimeChangedHandle.AddUObject(this, &ALobbyGameMode::OnRemainingTimeTimerUpdated);
-	}
 }
 
 void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 	CheckAllPlayerReady();	// the new one is not ready so timer will be cleared
-	/*
-	ALobbyGameState* LGS = GetGameState<ALobbyGameState>();
-	if (LGS)
-	{
-		if (LGS->PlayerArray.Num() == StartTimerConnectionCount)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GM start count down"));
-			//LGS->startLoseTimeTimer();
-			LGS->CountDownStartTime_Server = GetWorld()->GetTimeSeconds();
-			LGS->CountDownDuration = ChangeLevelCountDownDuration;
-
-			// set a timer of ChangeLevelCountDownDuration (30sec). After 30sec, change level.
-			GetWorldTimerManager().SetTimer(
-				ChangeLevelTimerHandle,
-				this,
-				&ALobbyGameMode::ChangeLevel,
-				ChangeLevelCountDownDuration,
-				false
-			);
-		}
-	}
-	*/
 }
 
 void ALobbyGameMode::Logout(AController* Exiting)
@@ -55,9 +31,10 @@ void ALobbyGameMode::Logout(AController* Exiting)
 void ALobbyGameMode::ChangeLevel()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Count down over, changing level!"));
-
+	// /Script/Engine.World'/Game/AmongUs/Maps/LVL_Game.LVL_Game'
+	///Script/Engine.Blueprint'/Game/AmongUs/GameMode/GM_Game.GM_Game'
 	GetWorld()->ServerTravel(
-TEXT("/Game/AmongUs/Level/LVL_4PLevel?listen?game=/Game/AmongUs/GameMode/GM_amongus4P.GM_amongus4P_C"),
+TEXT("/Game/AmongUs/Maps/LVL_Game?listen?game=/Game/AmongUs/GameMode/GM_Game.GM_Game_C"),
 	false,	// it's seemless
 	false	// players are notified
 	);
@@ -86,20 +63,29 @@ void ALobbyGameMode::CheckAllPlayerReady()
 					{
 						TimerManager.ClearTimer(ChangeLevelTimerHandle);
 					}
+					UE_LOG(LogTemp, Warning, TEXT("at least 1 player is not ready"));
 					return;
 				}
 			}
+			else UE_LOG(LogTemp, Warning, TEXT("amPS INVALID fo some reason"));
 		}
-	}
 
-	
-	if (TimerManager.IsTimerActive(ChangeLevelTimerHandle)) return;	// idk, just for safety?
-	// set a timer of ChangeLevelCountDownDuration (let's say 30 sec). After 30sec, change level.
-	TimerManager.SetTimer(
-		ChangeLevelTimerHandle,
-		this,
-		&ALobbyGameMode::ChangeLevel,
-		ChangeLevelCountDownDuration,
-		false
-	);
+		//LGS->startLoseTimeTimer();
+		LGS->CountDownStartTime_Server = GetWorld()->GetTimeSeconds();
+		LGS->OnRep_CountDownStartTime_Server();
+		LGS->CountDownDuration = ChangeLevelCountDownDuration;
+
+		UE_LOG(LogTemp, Warning, TEXT("ALL PLAYER READY, STARTING TIMER..."));
+		if (TimerManager.IsTimerActive(ChangeLevelTimerHandle)) return;	// idk, just for safety?
+		// set a timer of ChangeLevelCountDownDuration (let's say 30 sec). After 30sec, change level.
+		TimerManager.SetTimer(
+			ChangeLevelTimerHandle,
+			this,
+			&ALobbyGameMode::ChangeLevel,
+			ChangeLevelCountDownDuration,
+			false
+		);
+	}
+	else return; // lobby GameState invalid
+
 }

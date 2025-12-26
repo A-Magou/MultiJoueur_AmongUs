@@ -46,7 +46,7 @@ void UOTSessionMenu::MenuSetup(const bool ShouldAddToViewport,const bool ShouldB
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("UOTSessionMenu valid"));	// tianle
+				UE_LOG(LogTemp, Warning, TEXT("OTSessionsSubsystem valid"));	// tianle
 			}
 			checkf(OTSessionsSubsystem != nullptr, TEXT("Multiplayer Session Subsystem cannot be found"));
 
@@ -94,10 +94,10 @@ void UOTSessionMenu::HostSession(const TSoftObjectPtr<UWorld> LobbyLevel,
 
 void UOTSessionMenu::FindSession(int32 MaxSessionNumber, const FString& MatchType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("UOTSessionMenu FIND SESSION CALLED"));	// tianle
+	UE_LOG(LogTemp, Display, TEXT("UOTSessionMenu FIND SESSION CALLED"));	// tianle
 	if(!ensureMsgf(OTSessionsSubsystem != nullptr,
 		TEXT("Multiplayer Session Subsystem is not set. Did you call MenuSetup?"))) return;
-	UE_LOG(LogTemp, Warning, TEXT("CALLING SUBSYSTEM TO FIND SESSIONS"));	// tianle
+	UE_LOG(LogTemp, Display, TEXT("CALLING SUBSYSTEM TO FIND SESSIONS"));	// tianle
 	OTSessionsSubsystem->FindSessions(MaxSessionNumber, MatchType);
 }
 

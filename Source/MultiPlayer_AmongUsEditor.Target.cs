@@ -5,11 +5,11 @@ using System.Collections.Generic;
 
 public class MultiPlayer_AmongUsEditorTarget : TargetRules
 {
-	public MultiPlayer_AmongUsEditorTarget(TargetInfo Target) : base(Target)
+	public MultiPlayer_AmongUsEditorTarget( TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V5;
-		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_6;
+		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
 		ExtraModuleNames.Add("MultiPlayer_AmongUs");
 	}
 }

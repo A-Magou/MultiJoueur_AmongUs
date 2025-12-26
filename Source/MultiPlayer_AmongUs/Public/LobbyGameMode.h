@@ -17,6 +17,9 @@ class MULTIPLAYER_AMONGUS_API ALobbyGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
+private:
+	ALobbyGameMode();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;

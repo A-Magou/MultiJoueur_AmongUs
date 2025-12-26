@@ -28,13 +28,13 @@ protected:
 	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_EtatJoueur)
-	EEtatJoueur Etat = EEtatJoueur::Crew;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_SkinJoueur)
-	int SkinIndex = -1;
+	EEtatJoueur Etat = EEtatJoueur::Mort;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_ReadyJoueur)
 	bool bIsReady = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_SkinIndexChanged)
+	int32 SkinIndex = 0;
 	
 	UPROPERTY()
 	FString name = "Player";
@@ -45,21 +45,21 @@ public:
 	void OnRep_EtatJoueur();
 
 	UFUNCTION()
-	void OnRep_SkinJoueur();
+	void OnreP_ReadyJoueur();
 
 	UFUNCTION()
-	void OnreP_ReadyJoueur();
+	void OnRep_SkinIndexChanged();
 
 
 	UFUNCTION()
 	void SetEtat(EEtatJoueur newEtat);
 
-	UFUNCTION()
-	void SetSkin(int NewSkinIndex);
-
 	UFUNCTION(Server, Reliable)
 	void SetReady();
 
+	UFUNCTION(Server, Reliable)
+	void ServerSetSkinIndex(int32 newSkinIndex);
+	
 	
 	
 };

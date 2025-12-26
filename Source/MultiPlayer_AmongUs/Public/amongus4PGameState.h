@@ -28,9 +28,6 @@ public:
 
 	UFUNCTION()
 	void InitializeEtat();
-	
-	UFUNCTION()
-	void InitializeSkin();
 
 	UFUNCTION()
 	void InitializeTask(int multiplier);
@@ -43,10 +40,17 @@ public:
 	void setNbTaskRemaning(int newNbTR);
 
 	UFUNCTION()
-	void OnRep_CountDownStartTime_Server();
+	void OnRep_GameCountDownStartTime_Server();
 
+	UFUNCTION()
+	void OnRep_SabotageAblityEndTime_Server();
+
+	UFUNCTION()
+	void OnRep_SabotageAblityStartTime_Server();
 
 public:
+	// GAME
+	
 	/// tasks ///
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, ReplicatedUsing = onRep_nbTaskRemaning)
 	int nbTaskRemaning = 9999;
@@ -54,11 +58,20 @@ public:
 	UPROPERTY()
 	FOnTaskChanged OnTaskChanged;
 
-	/// return to lobby ///
-	UPROPERTY(ReplicatedUsing = OnRep_CountDownStartTime_Server)
-	int CountDownStartTime_Server = -1;
+	/// Crew ///
+	UPROPERTY(ReplicatedUsing = OnRep_GameCountDownStartTime_Server)
+	int GameCountDownStartTime_Server = -1;
 	
 	UPROPERTY(Replicated)
 	int CountDownDuration = -1;
 	
+	/// Imposter ///
+	UPROPERTY(ReplicatedUsing = OnRep_SabotageAblityEndTime_Server)
+	float SabotageAblityEndTime_Server = -1; // when sabotage ends (fixed by crew), start ability cooldown
+	
+	UPROPERTY(ReplicatedUsing = OnRep_SabotageAblityStartTime_Server)
+	float SabotageAblityStartTime_Server = -1;	// when sabotage ends (ends itself, never fixed by crew), imposter win
+
+	UFUNCTION()
+	bool IsSabotageAbilityReady();
 };

@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.6",
+	"EngineAssociation": "5.4",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -9,8 +9,6 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
-				"Engine",
-				"AIModule",
 				"UMG"
 			]
 		}
@@ -24,15 +22,7 @@
 			]
 		},
 		{
-			"Name": "StateTree",
-			"Enabled": true
-		},
-		{
-			"Name": "GameplayStateTree",
-			"Enabled": true
-		},
-		{
-			"Name": "OnlineSubsystemSteam",
+			"Name": "OnlineSubsystemEOS",
 			"Enabled": true
 		}
 	]

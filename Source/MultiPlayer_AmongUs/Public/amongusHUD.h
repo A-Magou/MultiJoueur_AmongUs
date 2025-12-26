@@ -8,9 +8,11 @@
 #include "amongusPlayerState.h"
 #include "Enum/playerEnum.h"
 
-#include "EtatWidget.h"
-#include "TaskWidget.h"
-#include "TimerWidget.h"
+#include "Widgets/EtatWidget.h"
+#include "Widgets/TaskWidget.h"
+#include "Widgets/TimerWidget.h"
+#include "Widgets/SabotageCountDownWidget.h"
+#include "Widgets/MiniGameWidget.h"
 
 #include "amongusHUD.generated.h"
 
@@ -28,15 +30,21 @@ protected:
 	virtual void BeginPlay() override;
 	
 public:
-	void UpdateEtat(AamongusPlayerState* changedPS, EEtatJoueur etat);
+	void UpdateEtat(EEtatJoueur etat);
 
 	void UpdateNbTask(int newNbTask);
 
 	void InitializeWidgets();
 
-	void ShowTimerWidget();
+	void CreateGlobalTimerWidget();
 
 	void UpdateTimerWidget(int NewTime);
+
+	void CreateSabotageCountDownWidget();
+
+	void UpdateSabotageCountDownWidget(int NewTime);
+
+	void CreateMiniGameWidget();
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget")
@@ -48,11 +56,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget")
 	TSubclassOf<UTimerWidget> timerWidgetClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget")
+	TSubclassOf<USabotageCountDownWidget> SabotageCountDownWidgetClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget")
+	TSubclassOf<UMiniGameWidget> MiniGameWidgetClass;
+	
 	UPROPERTY()
 	UEtatWidget* etatWidgetInstance;
 	UPROPERTY()
 	UTaskWidget* nbTaskWidgetInstance;
 	UPROPERTY()
 	UTimerWidget* timerWidgetInstance;
+	UPROPERTY()
+	USabotageCountDownWidget* sabotageCountDownWidgetInstance;
+	UPROPERTY()
+	UMiniGameWidget* MiniGameWidgetInstance;
 	
 };

@@ -20,26 +20,14 @@ public class MultiPlayer_AmongUs : ModuleRules
 			"UMG",
 			"Slate",
             "OnlineSubsystem",
+            "OnlineSubsystemEOS",
             "OnlineSubsystemUtils"
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
 		PublicIncludePaths.AddRange(new string[] {
-			"MultiPlayer_AmongUs",
-			"MultiPlayer_AmongUs/Variant_Platforming",
-			"MultiPlayer_AmongUs/Variant_Platforming/Animation",
-			"MultiPlayer_AmongUs/Variant_Combat",
-			"MultiPlayer_AmongUs/Variant_Combat/AI",
-			"MultiPlayer_AmongUs/Variant_Combat/Animation",
-			"MultiPlayer_AmongUs/Variant_Combat/Gameplay",
-			"MultiPlayer_AmongUs/Variant_Combat/Interfaces",
-			"MultiPlayer_AmongUs/Variant_Combat/UI",
-			"MultiPlayer_AmongUs/Variant_SideScrolling",
-			"MultiPlayer_AmongUs/Variant_SideScrolling/AI",
-			"MultiPlayer_AmongUs/Variant_SideScrolling/Gameplay",
-			"MultiPlayer_AmongUs/Variant_SideScrolling/Interfaces",
-			"MultiPlayer_AmongUs/Variant_SideScrolling/UI"
+			"MultiPlayer_AmongUs"
 		});
 
 		// Uncomment if you are using Slate UI

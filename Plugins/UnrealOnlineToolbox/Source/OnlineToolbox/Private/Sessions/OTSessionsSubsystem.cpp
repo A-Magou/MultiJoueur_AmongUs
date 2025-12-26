@@ -4,6 +4,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "Online/OnlineSessionNames.h"
+#include "OnlineSubsystemTypes.h"
 
 UOTSessionsSubsystem::UOTSessionsSubsystem() :
 	CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &UOTSessionsSubsystem::OnCreateSessionComplete)),
@@ -68,6 +69,7 @@ void UOTSessionsSubsystem::CreateSession(int32 NumConnections, const FString& Ma
 	LastSessionSettings->Set(FName("IsPrivate"),bIsPrivate,EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 	LastSessionSettings->Set(FName("Password"),Password,EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 	LastSessionSettings->Set(FName("SessionName"),SessionName,EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	LastSessionSettings->Set(FName("ThisGameKey"),FString("TianZhakPhil"),EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 #if !UE_BUILD_SHIPPING
 	//Enforce a specific Build ID in not shipping so we can
@@ -96,12 +98,10 @@ void UOTSessionsSubsystem::CreateSession(int32 NumConnections, const FString& Ma
 
 void UOTSessionsSubsystem::FindSessions(int32 MaxSearchResults, const FString& MatchType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("SUBSYSTEM CALLED TO FIND SESSIONS"));	// tianle
+	UE_LOG(LogTemp, Log, TEXT("SUBSYSTEM CALLED TO FIND SESSIONS"));	// tianle
 	if(!ensureMsgf(SessionInterface.IsValid(), TEXT("Unable to get the Session Interface"))) return;
-	UE_LOG(LogTemp, Warning, TEXT("PASSED ENSUREMSGF"));	// tianle
-
-	SessionInterface->CancelFindSessions();
-
+	UE_LOG(LogTemp, Log, TEXT("PASSED ENSUREMSGF"));	// tianle
+	
 	
 	//Register the delegate for when the find session complete and store its handle for later removal
 	FindSessionsCompleteDelegateHandle = SessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
@@ -117,7 +117,8 @@ void UOTSessionsSubsystem::FindSessions(int32 MaxSearchResults, const FString& M
 	
 	LastSessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 	LastSessionSearch->QuerySettings.Set(FName("MatchType"), MatchType, EOnlineComparisonOp::Equals);
-
+	LastSessionSearch->QuerySettings.Set(FName("ThisGameKey"),FString("TianZhakPhil"), EOnlineComparisonOp::Equals);
+	
 	if (!LastSessionSearch->bIsLanQuery)
 	{
 		LastSessionSearch->TimeoutInSeconds = 20.0f;
@@ -194,6 +195,36 @@ void UOTSessionsSubsystem::StartSession()
 	{
 		SessionInterface->ClearOnStartSessionCompleteDelegate_Handle(StartSessionCompleteDelegateHandle);
 		ToolboxOnStartSessionComplete.Broadcast(false);
+	}
+}
+
+void UOTSessionsSubsystem::LoginToEOS(FString Id, FString Token, FString LoginType)
+{
+	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
+	if (Subsystem)
+	{
+		IOnlineIdentityPtr Identity = Subsystem->GetIdentityInterface();
+		if (Identity.IsValid())
+		{
+			FOnlineAccountCredentials Credentials;
+			Credentials.Type = LoginType;
+			Credentials.Id = Id;
+			Credentials.Token = Token;
+
+			Identity->AddOnLoginCompleteDelegate_Handle(0,
+				FOnLoginCompleteDelegate::CreateUObject(this, &UOTSessionsSubsystem::OnLoginComplete));
+
+			Identity->Login(0, Credentials);
+		}
+	}
+}
+
+void UOTSessionsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId,
+	const FString& Error)
+{
+	if (bWasSuccessful)
+	{
+		
 	}
 }
 

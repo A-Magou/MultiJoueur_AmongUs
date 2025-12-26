@@ -7,6 +7,11 @@
 #include "Logging/LogMacros.h"
 #include "ServerRewind/RewindableComponent.h"
 #include "amongusPlayerState.h"
+#include "Bouton.h"
+
+
+
+
 #include "MultiPlayer_AmongUsCharacter.generated.h"
 
 class USpringArmComponent;
@@ -35,6 +40,9 @@ class AMultiPlayer_AmongUsCharacter : public ACharacter
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	URewindableComponent* RewindComponent;
+
+
+	FTimerHandle InitSkinTimerHandle;
 	
 protected:
 
@@ -60,6 +68,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* SetReadyAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* Interaction_SabotageAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* KillAction;
+
+	
 	virtual void BeginPlay() override;
 	
 
@@ -83,6 +98,12 @@ protected:
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
+	UFUNCTION()
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
 public:
 
 	/** Handles move inputs from either controls or UI interfaces */
@@ -105,13 +126,26 @@ public:
 	void ServerChangeSkin();
 
 	UFUNCTION()
-	void SetReady();
-	
-	UFUNCTION()
-	void DoChangeSkin(UMaterialInterface* skin);
+	void TryChangeSkin();
 
 	UFUNCTION()
-    void OnRep_SkinChanged();
+	void UpdateSkinVisual(int32 SkinIndex);
+
+	UFUNCTION()
+	void SetReady();
+
+	UFUNCTION()
+	void GeneralInteraction();
+	
+	UFUNCTION(Server, Reliable)
+	void ServerTrySabotage();
+	
+	UFUNCTION(Server, Reliable)
+	void ServerTryInteractionWithInteractable();
+
+	UFUNCTION(Client, Reliable)
+	void ClientStartMiniGame();
+
 
 public:
 
@@ -124,18 +158,12 @@ public:
 
 
 public:
-	UPROPERTY()
-	AamongusPlayerState* PS;
+	//UPROPERTY()
+	//AamongusPlayerState* AmongusPlayerState; // idk why doesn't work
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TMap <int32, UMaterialInterface*> Skins;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	int32 CurrentSkinIndex = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_SkinChanged)
-	UMaterialInterface* CurrentSkin;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float LineTraceDistance = 2000;
 
@@ -149,16 +177,20 @@ private:
 public:
 	UFUNCTION(BlueprintCallable, Category="LineTrace")
 	void DoLineTrace();
-
-
 	
 	UFUNCTION()
 	URewindableComponent* GetRewindComponent() {return this->RewindComponent;}
 
-public:
-	UFUNCTION()
-	void UpdateSkinFromIndex(int NewSkinIndex);
-
 	virtual void OnRep_PlayerState() override;
+
+	UFUNCTION()
+	void InitSkin();
+
+	/// Tasks ///
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<ABouton*> Buttons;
+	
+	
+	/// Tasks end ///
 };
 

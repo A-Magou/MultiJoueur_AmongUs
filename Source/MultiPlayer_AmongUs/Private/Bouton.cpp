@@ -12,7 +12,7 @@
 ABouton::ABouton()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 
 	SphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollision"));
@@ -29,58 +29,8 @@ void ABouton::BeginPlay()
 	
 }
 
-// Called every frame
-void ABouton::Tick(float DeltaTime)
+void ABouton::OnRep_bIsUsing()
 {
-	Super::Tick(DeltaTime);
-
 }
 
-void ABouton::Interact(AActor* otherActor)
-{
-	AMultiPlayer_AmongUsCharacter* character = Cast<AMultiPlayer_AmongUsCharacter>(otherActor);
-	if (character)
-	{
-		APlayerState* CurrentPS = character->GetPlayerState();
-		if (CurrentPS)
-		{
-			AamongusPlayerState* PS = Cast<AamongusPlayerState>(CurrentPS);
-			if (PS)
-			{
-				Aamongus4PGameState* AmGS = GetWorld()->GetGameState<Aamongus4PGameState>();
-				if (AmGS)
-				{
-					if (PS->Etat == EEtatJoueur::Crew)
-                    {
-                    	AmGS->setNbTaskRemaning(AmGS->nbTaskRemaning - 1);
-						//UE_LOG(LogTemp, Warning, TEXT("CREW UPDATE TASK"));
-						UE_LOG(LogTemp, Warning, TEXT("TASK REMAINING : %d"), AmGS->nbTaskRemaning);
-                    }
-                    else if (PS->Etat == EEtatJoueur::Impostor)
-                    {
-                    	AmGS->setNbTaskRemaning(AmGS->nbTaskRemaning + 1);
-                    	//UE_LOG(LogTemp, Warning, TEXT("IMPOSTER UPDATE TASK"));
-                    	UE_LOG(LogTemp, Warning, TEXT("TASK REMAINING : %d"), AmGS->nbTaskRemaning);
-                    }
-				}
-				else
-				{
-					UE_LOG(LogTemp, Error, TEXT("AMGS FAIL"));
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("PS FAIL"));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("CURRENT PS FAIL"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("CHARACTER FAIL"));
-	}
-}
 

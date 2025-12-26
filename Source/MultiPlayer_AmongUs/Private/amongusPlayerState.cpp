@@ -32,6 +32,7 @@ void AamongusPlayerState::CopyProperties(APlayerState* PlayerState)
 	if (NewPS)
 	{
 		NewPS->SkinIndex = this->SkinIndex;
+		UE_LOG(LogTemp, Warning, TEXT("copy properties DONE"));
 	}
 	else
 	{
@@ -48,36 +49,15 @@ void AamongusPlayerState::OnRep_EtatJoueur()
 	}
 }
 
-void AamongusPlayerState::OnRep_SkinJoueur()
-{
-	APawn* P = GetPawn();
-	if (P)
-	{
-		AMultiPlayer_AmongUsCharacter* Player = Cast<AMultiPlayer_AmongUsCharacter>(P);
-		if (Player)
-		{
-			Player->UpdateSkinFromIndex(SkinIndex);
-		}
-	}
-}
-
-
-
 void AamongusPlayerState::SetEtat(EEtatJoueur newEtat)
 {
 	this->Etat = newEtat;
 }
 
-void AamongusPlayerState::SetSkin(int NewSkinIndex)
-{
-	this->SkinIndex = NewSkinIndex;
-	UE_LOG(LogTemp, Warning, TEXT("PlayerState skin index %d"), SkinIndex);
 
-	if (GetNetMode() != NM_Client) 
-	{
-		OnRep_SkinJoueur(); 
-	}
-}
+
+
+
 
 // READY
 void AamongusPlayerState::OnreP_ReadyJoueur()
@@ -104,3 +84,33 @@ void AamongusPlayerState::SetReady_Implementation()
 	}
 }
 // READY END
+
+
+// SKIN
+
+void AamongusPlayerState::OnRep_SkinIndexChanged()
+{
+	APawn* Pawn = GetPawn();
+	if (Pawn)
+	{
+		AMultiPlayer_AmongUsCharacter* amCharacter = Cast<AMultiPlayer_AmongUsCharacter>(Pawn);
+		if (amCharacter)
+		{
+			amCharacter->UpdateSkinVisual(SkinIndex);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Pawn is null"));
+	}
+}
+
+void AamongusPlayerState::ServerSetSkinIndex_Implementation(int32 newSkinIndex)
+{
+	SkinIndex = newSkinIndex;
+
+	OnRep_SkinIndexChanged();
+}
+
+// SKIN END
+

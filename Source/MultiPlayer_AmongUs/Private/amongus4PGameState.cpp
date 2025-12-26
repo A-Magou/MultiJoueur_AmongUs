@@ -18,12 +18,15 @@ void Aamongus4PGameState::GetLifetimeReplicatedProps(TArray<class FLifetimePrope
 	DOREPLIFETIME(Aamongus4PGameState, nbTaskRemaning);
 
 	// level duration, changing level
-	DOREPLIFETIME(Aamongus4PGameState, CountDownStartTime_Server);
+	DOREPLIFETIME(Aamongus4PGameState, GameCountDownStartTime_Server);
 	DOREPLIFETIME(Aamongus4PGameState, CountDownDuration);
+	DOREPLIFETIME(Aamongus4PGameState, SabotageAblityEndTime_Server);
+	DOREPLIFETIME(Aamongus4PGameState, SabotageAblityStartTime_Server);
 }
 
 void Aamongus4PGameState::InitializeEtat()
 {
+	//UE_LOG(LogTemp, Warning, TEXT("InitializeEtat called"));
 	if (HasAuthority())
 	{
 		TArray players = PlayerArray;
@@ -67,7 +70,6 @@ void Aamongus4PGameState::InitializeEtat()
 		// give roles
 		for (int i = 0; i < playerNumber; i++)
 		{
-			//players[i]->GetPlayerController()->GetPlayerState<AamongusPlayerState>();
 			AamongusPlayerState* PS = Cast<AamongusPlayerState>(players[i]);
 			if (PS)
 			{
@@ -79,18 +81,18 @@ void Aamongus4PGameState::InitializeEtat()
 				{
 					PS->SetEtat(EEtatJoueur::Crew);
 				}
+				PS->OnRep_EtatJoueur();
 			}
 			else
 			{
 				UE_LOG(LogTemp, Error, TEXT("give roles PS cast FAIL"));
 			}
 		}
-		
 	}
-}
-
-void Aamongus4PGameState::InitializeSkin()
-{
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GS has NO authority"));
+	}
 }
 
 void Aamongus4PGameState::InitializeTask(int multiplier)
@@ -105,6 +107,18 @@ void Aamongus4PGameState::onRep_nbTaskRemaning()
 {
 	//UE_LOG(LogTemp, Warning, TEXT("TASK REMAINING : %d"), nbTaskRemaning);
 	OnTaskChanged.Broadcast(this->nbTaskRemaning);
+	if (nbTaskRemaning <= 0)
+	{
+		AGameModeBase*  CurrentGM = UGameplayStatics::GetGameMode(GetWorld());
+		if (CurrentGM)
+		{
+			Aamongus4PGameMode* GM = Cast<Aamongus4PGameMode>(CurrentGM);
+			if (GM)
+			{
+				GM->GameOver(true);
+			}
+		}
+	}
 }
 
 void Aamongus4PGameState::setNbTaskRemaning(int newNbTR)
@@ -118,14 +132,15 @@ void Aamongus4PGameState::setNbTaskRemaning(int newNbTR)
 			Aamongus4PGameMode* GM = Cast<Aamongus4PGameMode>(CurrentGM);
 			if (GM)
 			{
-				GM->GameOver();
+				GM->ReturnToLobby();
 			}
 		}
 	}
 }
 
-void Aamongus4PGameState::OnRep_CountDownStartTime_Server()
+void Aamongus4PGameState::OnRep_GameCountDownStartTime_Server()
 {
+	//UE_LOG(LogTemp, Warning, TEXT("OnRep_CountDownStartTime_Server"));
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
 		APlayerController* PC = Iterator->Get();
@@ -147,3 +162,44 @@ void Aamongus4PGameState::OnRep_CountDownStartTime_Server()
 		}
 	}
 }
+
+
+
+/// Sabotage ///
+void Aamongus4PGameState::OnRep_SabotageAblityEndTime_Server()
+{
+	APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController();
+ 	if (PC)
+ 	{
+ 		AamongusPlayerController* amPC = Cast<AamongusPlayerController>(PC);
+ 		if (amPC)
+ 		{
+ 			//UE_LOG(LogTemp, Warning, TEXT("amGS try to call amPC UpdateSabotageCountDownTimerHUD_Client"));
+ 			amPC->UpdateSabotageCountDownTimerHUD_Client(SabotageAblityEndTime_Server);
+ 		}
+ 		else
+ 		{
+ 			UE_LOG(LogTemp, Error, TEXT("OnRep_SabotageAblityEndTime_Server amPC FAILED"));
+ 		}
+ 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("OnRep_SabotageAblityEndTime_Server PC FAILED"));
+	}
+}
+
+void Aamongus4PGameState::OnRep_SabotageAblityStartTime_Server()
+{
+}
+
+bool Aamongus4PGameState::IsSabotageAbilityReady()
+{
+	if (SabotageAblityEndTime_Server == -1) return true;
+	
+	return false;
+	//float now = GetWorld()->GetTimeSeconds();
+	//return (FMath::Abs(now - SabotageAblityStartTime_Server) > 0.1);
+}
+/// Sabotage end ///
+
+

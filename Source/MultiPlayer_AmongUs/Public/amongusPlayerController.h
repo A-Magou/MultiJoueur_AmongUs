@@ -25,8 +25,9 @@ public:
 	UPROPERTY()
 	AamongusHUD* AmongusHUD;
 
-	UPROPERTY()
+	
 	FTimerHandle CountDownTimerHandle;
+	FTimerHandle SabotageCountDownTimerHandle;
 
 	int RemainingTime = -1;
 
@@ -46,8 +47,29 @@ public:
 	UFUNCTION()
 	void UpdateCountDownTimerHUD_Client();
 
-	
 
+	/// sabotage count down ///
+	float SabotageCountDownEndTime = -1;
+	float SabotageCountDownStartTime = -1;
+	int RemainingSabotageCountDownTime = -1;
+	
+	UFUNCTION()
+	void UpdateSabotageCountDownTimerHUD_Client(float EndTime);
+
+	UFUNCTION()
+	void UpdateSabotageCountDownTimerContent();
+	/// sabotage count down ///
+
+
+	/// tasks ///
+
+	UFUNCTION()
+	void ShowMiniGameWidget();
+	
+	/// tasks end ///
+
+
+	
 ///// time replication /////
 	
 #pragma region NetworkClockSync

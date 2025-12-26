@@ -30,7 +30,6 @@ public class OnlineToolbox : ModuleRules
 				"Slate",
 				"SlateCore",
 				"UMG",
-                "OnlineSubsystem",
                 "OnlineSubsystemUtils"
             }
 			);

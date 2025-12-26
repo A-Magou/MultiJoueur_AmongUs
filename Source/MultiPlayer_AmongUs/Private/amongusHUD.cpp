@@ -1,9 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "amongusHUD.h"
+
+
+
 #include "amongusPlayerController.h"
+#include "Enum/widgetTypeEnum.h"
 
 
-void AamongusHUD::UpdateEtat(AamongusPlayerState* changedPS, EEtatJoueur etat)
+void AamongusHUD::UpdateEtat(EEtatJoueur etat)
 {
 	// changer la valeur d'etat du widget selon le pointeur de PS
 	if (etatWidgetInstance)
@@ -47,20 +51,19 @@ void AamongusHUD::InitializeWidgets()
             etatWidget->AddToViewport();
             taskWidget->AddToViewport();
 		}
-
 	}
 
-
-	
+	CreateSabotageCountDownWidget();
 }
 
-void AamongusHUD::ShowTimerWidget()
+void AamongusHUD::CreateGlobalTimerWidget()
 {
 	if (timerWidgetClass)
 	{
 		UTimerWidget* TimerWidget = CreateWidget<UTimerWidget>(GetWorld(), timerWidgetClass);
 		if (TimerWidget)
 		{
+			TimerWidget->TimerType = EWidgetType::Global;
 			timerWidgetInstance = TimerWidget;
 			TimerWidget->AddToViewport();
 		}
@@ -83,8 +86,44 @@ void AamongusHUD::UpdateTimerWidget(int NewTime)
 	}
 }
 
+void AamongusHUD::CreateSabotageCountDownWidget()
+{
+	if (SabotageCountDownWidgetClass)
+	{
+		USabotageCountDownWidget* SabotageCountDownWidget = CreateWidget<USabotageCountDownWidget>(GetWorld(), SabotageCountDownWidgetClass);
+		if (SabotageCountDownWidget)
+		{
+			sabotageCountDownWidgetInstance = SabotageCountDownWidget;
+			SabotageCountDownWidget->AddToViewport();
+		}
+	}
+	
+}
+
+void AamongusHUD::UpdateSabotageCountDownWidget(int NewTime)
+{
+	if (sabotageCountDownWidgetInstance)
+	{
+		sabotageCountDownWidgetInstance->RemainingTime = NewTime;
+	}
+}
+
+void AamongusHUD::CreateMiniGameWidget()
+{
+	if (MiniGameWidgetClass)
+	{
+		UMiniGameWidget* MiniGameWidget = CreateWidget<UMiniGameWidget>(GetWorld(), MiniGameWidgetClass);
+		if (MiniGameWidget)
+		{
+			MiniGameWidgetInstance = MiniGameWidget;
+			MiniGameWidget->AddToViewport();
+		}
+	}
+}
+
+
 void AamongusHUD::BeginPlay()
 {
 	Super::BeginPlay();
-	InitializeWidgets();
+	//InitializeWidgets();
 }

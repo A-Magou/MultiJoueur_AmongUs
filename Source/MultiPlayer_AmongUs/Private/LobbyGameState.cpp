@@ -32,6 +32,7 @@ void ALobbyGameState::initRemainingTime(int startTime)
 
 void ALobbyGameState::OnRep_CountDownStartTime_Server()
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnRep_CountDownStartTime_Server"));
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
 		APlayerController* PC = Iterator->Get();
@@ -44,7 +45,7 @@ void ALobbyGameState::OnRep_CountDownStartTime_Server()
 			}
 			else
 			{
-				UE_LOG(LogTemp, Error, TEXT("OnRep_CountDownStartTime_Server CAST AMONGUSPC FAILED"));
+				UE_LOG(LogTemp, Error, TEXT("OnRep_CountDownStartTime_Server CAST PC FAILED"));
 			}
 		}
 		else
@@ -52,5 +53,4 @@ void ALobbyGameState::OnRep_CountDownStartTime_Server()
         	UE_LOG(LogTemp, Error, TEXT("OnRep_CountDownStartTime_Server CAST PC FAILED"));
         }
 	}
-
 }

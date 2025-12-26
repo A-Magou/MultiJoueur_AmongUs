@@ -7,6 +7,8 @@
 
 #include "Sessions/OTJoinSessionResultType.h"
 #include "Sessions/OTSessionSearchResult.h"
+#include "Interfaces/OnlineIdentityInterface.h"
+#include "GameFramework/OnlineReplStructs.h"
 
 #include "OTSessionsSubsystem.generated.h"
 
@@ -71,6 +73,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void StartSession();
 
+
+	UFUNCTION()
+	void LoginToEOS(FString Id, FString Token, FString LoginType);
+	
+	void OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error);
+
+	
 	//
 	// Public delegates for class to bind callbacks
 	//
